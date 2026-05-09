@@ -1,1 +1,1 @@
-web: sh setup.sh && streamlit run PLModel_UploadFile.py
+web: sh setup.sh && streamlit run stock_analysis.py
