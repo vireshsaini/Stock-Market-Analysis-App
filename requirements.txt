@@ -2,6 +2,7 @@ numpy
 pandas
 scipy
 streamlit
+matplotlib
 #glob
 #os
 #hashlib
