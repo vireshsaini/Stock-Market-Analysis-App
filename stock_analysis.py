@@ -18,8 +18,8 @@ st.set_page_config(page_title="Simple Login", layout="centered")
 # ============================================================
 # CONFIG
 # ============================================================
-_file_ = "/mount/src/stock-market-analysis-app"
-BASE_DIR = Path(_file_).resolve().parent
+__file__ = "/mount/src/stock-market-analysis-app"
+BASE_DIR = Path(__file__).resolve().parent
 USER_DIR = BASE_DIR / "User"
 CRED_FILE = USER_DIR / "Credential.csv"
 #CRED_FILE = os.path.join(USER_DIR, "Credential.csv")
@@ -180,9 +180,11 @@ if st.session_state.auth["role"] == "admin":
 
 # ================= CONFIG =================
 #BHAVCOPY_DIR = r"D:\MLearning\NSE\Bhavcopy"
+#BASE_DIR = Path(__file__).resolve().parent
 
+#BHAVCOPY_DIR = BASE_DIR / "Bhavcopy"
 # User folder
-USER_DIR = BASE_DIR / "Bhavcopy"
+#USER_DIR = BASE_DIR / "Bhavcopy"
 
 # --- BASIC SECTOR MAP (extend anytime) ---
 SECTOR_MAP = {
@@ -220,8 +222,8 @@ def calculate_rsi_14(close):
 # ============================================================
 # LOAD BHAVCOPY DATA
 # ============================================================
-_file_ = "/mount/src/stock-market-analysis-app"
-BASE_DIR = Path(_file_).resolve().parent
+__file__ = "/mount/src/stock-market-analysis-app"
+BASE_DIR = Path(__file__).resolve().parent
 BHAVCOPY_DIR = BASE_DIR / "Bhavcopy"
 @st.cache_data(ttl=30)
 def load_price_history():
