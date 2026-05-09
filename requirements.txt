@@ -1,10 +1,7 @@
 numpy
 pandas
-sklearn
 scipy
 matplotlib
-seaborn
-PIL
 streamlit
 glob
 os
