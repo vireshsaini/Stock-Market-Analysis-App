@@ -12,3 +12,4 @@ hashlib
 datetime
 plotly
 reportlab
+pathlib 
