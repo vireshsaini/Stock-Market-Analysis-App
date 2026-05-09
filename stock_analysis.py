@@ -11,24 +11,17 @@ import plotly.express as px
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import inch
-
-# ================= START AUTH 30 APR 26 =================
-
-import streamlit as st
-import pandas as pd
-from datetime import datetime
-import os
-
-import streamlit as st
+from pathlib import Path
 
 st.set_page_config(page_title="Simple Login", layout="centered")
 
 # ============================================================
 # CONFIG
 # ============================================================
-
-USER_DIR = r"D:\MLearning\NSE\User"
-CRED_FILE = os.path.join(USER_DIR, "Credential.csv")
+BASE_DIR = Path(_file_).resolve().parent
+USER_DIR = BASE_DIR / "User"
+CRED_FILE = USER_DIR / "Credential.csv"
+#CRED_FILE = os.path.join(USER_DIR, "Credential.csv")
 
 # ============================================================
 # SAFE EXPIRY PARSER
@@ -185,7 +178,10 @@ if st.session_state.auth["role"] == "admin":
 # ================= END AUTH 30 APR 26 =================
 
 # ================= CONFIG =================
-BHAVCOPY_DIR = r"D:\MLearning\NSE\Bhavcopy"
+#BHAVCOPY_DIR = r"D:\MLearning\NSE\Bhavcopy"
+
+# User folder
+USER_DIR = BASE_DIR / "Bhavcopy"
 
 # --- BASIC SECTOR MAP (extend anytime) ---
 SECTOR_MAP = {
@@ -223,9 +219,16 @@ def calculate_rsi_14(close):
 # ============================================================
 # LOAD BHAVCOPY DATA
 # ============================================================
+BASE_DIR = Path(_file_).resolve().parent
+BHAVCOPY_DIR = BASE_DIR / "Bhavcopy"
 @st.cache_data(ttl=30)
 def load_price_history():
-    files = sorted(glob.glob(os.path.join(BHAVCOPY_DIR, "sec_bhavdata_full_*.csv")))
+    #files = sorted(glob.glob(os.path.join(BHAVCOPY_DIR, "sec_bhavdata_full_*.csv")))
+    files = sorted(
+    BHAVCOPY_DIR.glob(
+        "sec_bhavdata_full_*.csv"
+    )
+)
     if not files:
         return pd.DataFrame()
 
