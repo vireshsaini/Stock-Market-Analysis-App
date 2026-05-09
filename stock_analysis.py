@@ -1491,14 +1491,19 @@ st.subheader("📄 Daily Institutional Reports")
 
 report_date = hist["DATE1"].max().strftime("%d-%m-%Y")
 
-# Excel
 excel_name = f"nse_institutional_report_{report_date}.xlsx"
+
 with pd.ExcelWriter(excel_name, engine="xlsxwriter") as writer:
-    latest.to_excel(writer, "Snapshot", index=False)
-    top_buy.to_excel(writer, "Top_Buy", index=False)
-    top_sell.to_excel(writer, "Top_Sell", index=False)
-    vwap_zone.to_excel(writer, "VWAP_Zones", index=False)
-    sector_flow.to_excel(writer, "Sector_Rotation", index=False)
+
+    latest.to_excel(writer, sheet_name="Snapshot", index=False)
+
+    top_buy.to_excel(writer, sheet_name="Top_Buy", index=False)
+
+    top_sell.to_excel(writer, sheet_name="Top_Sell", index=False)
+
+    vwap_zone.to_excel(writer, sheet_name="VWAP_Zones", index=False)
+
+    sector_flow.to_excel(writer, sheet_name="Sector_Rotation", index=False)
 
 st.download_button(
     "⬇️ Download Excel Report",
