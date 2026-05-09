@@ -234,7 +234,7 @@ def calculate_rsi_14(close):
 # ============================================================
 # LOAD BHAVCOPY DATA
 # ============================================================
-__file__ = "/mount/src/stock-market-analysis-app"
+#__file__ = "/mount/src/stock-market-analysis-app"
 BASE_DIR = Path(__file__).resolve().parent
 BHAVCOPY_DIR = BASE_DIR / "Bhavcopy"
 @st.cache_data(ttl=30)
