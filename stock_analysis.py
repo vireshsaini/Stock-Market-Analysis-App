@@ -18,6 +18,7 @@ st.set_page_config(page_title="Simple Login", layout="centered")
 # ============================================================
 # CONFIG
 # ============================================================
+_file_ = "/mount/src/stock-market-analysis-app"
 BASE_DIR = Path(_file_).resolve().parent
 USER_DIR = BASE_DIR / "User"
 CRED_FILE = USER_DIR / "Credential.csv"
