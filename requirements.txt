@@ -1,12 +1,11 @@
 numpy
 pandas
 scipy
-matplotlib
 streamlit
-glob
-os
-hashlib
-datetime
+#glob
+#os
+#hashlib
+#datetime
 plotly
 reportlab
-pathlib 
+#pathlib 
