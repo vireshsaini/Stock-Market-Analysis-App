@@ -18,12 +18,24 @@ st.set_page_config(page_title="Simple Login", layout="centered")
 # ============================================================
 # CONFIG
 # ============================================================
-__file__ = "/mount/src/stock-market-analysis-app"
-BASE_DIR = Path(__file__).resolve().parent
-USER_DIR = BASE_DIR / "User"
-CRED_FILE = USER_DIR / "Credential.csv"
+#__file__ = "/mount/src/stock-market-analysis-app"
+#BASE_DIR = Path(__file__).resolve().parent
+#USER_DIR = BASE_DIR / "User"
+#CRED_FILE = USER_DIR / "Credential.csv"
 #CRED_FILE = os.path.join(USER_DIR, "Credential.csv")
 
+BASE_DIR = Path(__file__).resolve().parent
+
+USER_DIR = BASE_DIR / "User"
+
+BHAVCOPY_DIR = BASE_DIR / "Bhavcopy"
+
+CRED_FILE = USER_DIR / "Credential.csv"
+
+print(BASE_DIR)
+print(USER_DIR)
+print(BHAVCOPY_DIR)
+print(CRED_FILE)
 # ============================================================
 # SAFE EXPIRY PARSER
 # ============================================================
