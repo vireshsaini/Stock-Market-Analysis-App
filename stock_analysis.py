@@ -212,7 +212,9 @@ SECTOR_MAP = {
 # ================= STREAMLIT =================
 st.set_page_config("NSE Institutional Terminal", layout="wide")
 st.title("🚀 NSE Institutional Smart Money Terminal")
-
+st.caption(
+    "All analysis is based on historical data and should not be considered financial advice. Invest at your own risk."
+)
 # ================= SIDEBAR =================
 st.sidebar.header("📅 Institutional Controls")
 window_days = st.sidebar.selectbox(
@@ -237,7 +239,7 @@ def calculate_rsi_14(close):
 #__file__ = "/mount/src/stock-market-analysis-app"
 BASE_DIR = Path(__file__).resolve().parent
 BHAVCOPY_DIR = BASE_DIR / "Bhavcopy"
-@st.cache_data(ttl=30)
+@st.cache_data(ttl=120)
 def load_price_history():
     #files = sorted(glob.glob(os.path.join(BHAVCOPY_DIR, "sec_bhavdata_full_*.csv")))
     files = sorted(
@@ -313,7 +315,7 @@ latest = (
 )
 
 # ================= STOCK SNAPSHOT =================
-st.subheader("📊 Stock Snapshot")
+st.subheader("📊 Market Wealth Insights -Summary")
 st.dataframe(
     latest[
         [
@@ -1481,8 +1483,8 @@ def generate_pdf(latest_df):
 
     return file
 
-pdf_path = generate_pdf(portfolio)
-st.success(f"✅ PDF generated: {pdf_path}")
+#pdf_path = generate_pdf(portfolio)
+#st.success(f"✅ PDF generated: {pdf_path}")
 
 ######## END - CODE ADDED BASED ON FEEDBACK  29-APR-2026########################
 
