@@ -40,6 +40,7 @@ print(CRED_FILE)
 # SAFE EXPIRY PARSER
 # ============================================================
 @st.cache_data(ttl=300)
+@st.fragment(run_every="5m")
 def parse_expiry(value):
     value = str(value).strip()
     for fmt in ("%m/%d/%Y %H:%M", "%Y-%m-%d %H:%M"):
@@ -53,6 +54,7 @@ def parse_expiry(value):
 # LOAD USERS (AUTO DELIMITER + BOM SAFE)
 # ============================================================
 @st.cache_data(ttl=300)
+@st.fragment(run_every="5m")
 def load_users_from_csv():
     os.makedirs(USER_DIR, exist_ok=True)
 
@@ -97,7 +99,8 @@ def load_users_from_csv():
 # ============================================================
 # AUTHENTICATION (PLAIN TEXT)
 # ============================================================
-
+@st.cache_data(ttl=300)
+@st.fragment(run_every="5m")
 def authenticate(username, password, df):
     username = username.strip()
     password = password.strip()
@@ -225,6 +228,7 @@ window_days = st.sidebar.selectbox(
 
 # ================= RSI =================
 @st.cache_data(ttl=300)
+@st.fragment(run_every="5m")
 def calculate_rsi_14(close):
     delta = close.diff()
     gain = delta.clip(lower=0)
@@ -914,6 +918,7 @@ st.plotly_chart(
 # ================= TRADER SNAPSHOT TABLE =================
 st.subheader("📋 Trader Snapshot (Price | Volume | Time)")
 @st.cache_data(ttl=300)
+@st.fragment(run_every="5m")
 def trader_signal(row):
     if row["CLOSE_PRICE"] > row["VWAP"] and row["DELIV_PER"] > 60:
         return "🟢 Accumulation (Bullish)"
@@ -959,6 +964,7 @@ scanner_df["LIQUIDITY_VALUE"] = scanner_df["CLOSE_PRICE"] * scanner_df["TTL_TRD_
 
 # Trader signal logic
 @st.cache_data(ttl=300)
+@st.fragment(run_every="5m")
 def trader_signal(row):
     if row["DELIV_PER"] >= 60:
         return "🟢 Accumulation - Bullish"
@@ -1027,6 +1033,7 @@ st.info(
 # Tolerance for "VWAP flattening" (±0.5%)
 VWAP_TOL = 0.005
 @st.cache_data(ttl=300)
+@st.fragment(run_every="5m")
 def vwap_status(row):
     if row["CLOSE_PRICE"] > row["VWAP"] * (1 + VWAP_TOL):
         return "🟢⬆️ Bullish / Accumulation"
@@ -1059,6 +1066,7 @@ st.subheader("🧭 Volume Weighted Average Price(VWAP) Insight – Stock Decisio
 
 # Friendly interpretation column
 @st.cache_data(ttl=300)
+@st.fragment(run_every="5m")
 def smart_money_view(status):
     if "Bullish" in status:
         return "✅ Accumulating"
@@ -1209,6 +1217,8 @@ if "SERIES" not in latest.columns:
 # =========================================================
 # NORMALIZATION
 # =========================================================
+@st.cache_data(ttl=300)
+@st.fragment(run_every="5m")
 def normalize(series):
     if series.max() == series.min():
         return pd.Series(50, index=series.index)
@@ -1235,6 +1245,7 @@ latest["TC"] = 2 * latest["PIVOT"] - latest["BC"]
 # ✅ INSTITUTIONAL REGIME CLASSIFICATION (NEW)
 # =========================================================
 @st.cache_data(ttl=300)
+@st.fragment(run_every="5m")
 def institutional_regime(row):
     # Bullish accumulation
     if row["CLOSE_PRICE"] > row["TC"] and row["DELIV_PER"] >= 60:
@@ -1283,6 +1294,7 @@ latest["AI_1Y"] = (
 # TARGETS & PROBABILITY
 # =========================================================
 @st.cache_data(ttl=300)
+@st.fragment(run_every="5m")
 def target_prob(price, ai, div):
     tgt = price * (1 + ai / div)
     prob = min(95, 40 + ai * 0.7)
@@ -1382,6 +1394,7 @@ st.dataframe(
 ######## START - CODE ADDED BASED ON FEEDBACK  29-APR-2026########################
 from datetime import datetime
 @st.cache_data(ttl=300)
+@st.fragment(run_every="5m")
 def generate_pdf(latest_df):
     """
     Generates a customer-friendly PDF with
