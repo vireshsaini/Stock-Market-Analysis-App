@@ -1049,11 +1049,24 @@ latest["AI_1Y"] = (
 # =========================================================
 # TARGETS & PROBABILITY
 # =========================================================
+
+#def target_prob(price, ai, div):
+#    tgt = price * (1 + ai / div)
+#    prob = min(95, 40 + ai * 0.7)
+#    return round(tgt, 2), round(prob, 1)
+
 @st.cache_data(ttl=300)
 @st.fragment(run_every="5m")
 def target_prob(price, ai, div):
+
+    price = 0 if pd.isna(price) else float(price)
+    ai = 0 if pd.isna(ai) else float(ai)
+    div = 1 if pd.isna(div) or div == 0 else float(div)
+
     tgt = price * (1 + ai / div)
+
     prob = min(95, 40 + ai * 0.7)
+
     return round(tgt, 2), round(prob, 1)
 
 latest[["TARGET_1M", "PROB_1M"]] = latest.apply(
