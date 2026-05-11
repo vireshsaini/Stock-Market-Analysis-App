@@ -52,131 +52,30 @@ window_days = st.sidebar.selectbox(
     options=[5,10,20,50,100,200],
     index=1
 )
-
-# ================= RSI =================
-@st.cache_data(ttl=300)
-@st.fragment(run_every="5m")
-def calculate_rsi_14(close):
-    delta = close.diff()
-    gain = delta.clip(lower=0)
-    loss = -delta.clip(upper=0)
-    avg_gain = gain.rolling(14).mean()
-    avg_loss = loss.rolling(14).mean()
-    rs = avg_gain / avg_loss
-    return 100 - (100 / (1 + rs))
+#=================Data loader replacement================
+from data_loader import (
+    load_dashboard_data,
+    get_latest_snapshot
+)
 
 # ============================================================
-# LOAD BHAVCOPY DATA
+# LOAD DASHBOARD DATA
 # ============================================================
-BASE_DIR = Path(__file__).resolve().parent
-BHAVCOPY_DIR = BASE_DIR / "Bhavcopy"
 
+hist = load_dashboard_data(current_year=2026)
 
-@st.cache_data(ttl=600, show_spinner=True)
-def load_price_history(limit_files=360):
-    """
-    Render-safe version:
-    - loads limited files to avoid memory crash
-    - processes incrementally
-    - avoids huge concat spikes
-    """
-
-    files = sorted(BHAVCOPY_DIR.glob("sec_bhavdata_full_*.csv"))
-
-    if not files:
-        return pd.DataFrame()
-
-    # LIMIT FILES (CRITICAL FOR RENDER)
-    #files = files[-limit_files:]
-    limit_files = 360
-    files = sorted(files)[-min(limit_files, len(files)):]
-    
-
-    REQUIRED_COLS = {
-        "SYMBOL", "SERIES",
-        "PREV_CLOSE", "OPEN_PRICE", "HIGH_PRICE", "LOW_PRICE",
-        "LAST_PRICE", "CLOSE_PRICE", "AVG_PRICE",
-        "TTL_TRD_QNTY", "TURNOVER_LACS", "NO_OF_TRADES",
-        "DELIV_QTY", "DELIV_PER"
-    }
-
-    hist_chunks = []
-
-    for f in files:
-        try:
-            trade_date = datetime.strptime(
-                f.name.split("_")[-1].replace(".csv", ""),
-                "%d%m%Y"
-            )
-
-            df = pd.read_csv(f)
-            df.columns = df.columns.str.upper().str.strip()
-
-            if "SERIES" not in df.columns:
-                continue
-
-            df["SERIES"] = df["SERIES"].astype(str).str.upper().str.strip()
-            #df = df[df["SERIES"].str.startswith("EQ", na=False)]
-            df = df[df["SERIES"].astype(str).str.upper().str.strip().eq("EQ")]
-
-            missing_cols = REQUIRED_COLS - set(df.columns)
-            if len(missing_cols) > 0:
-                continue
-
-            df = df[list(REQUIRED_COLS)].copy()
-            df["DATE1"] = trade_date
-
-            hist_chunks.append(df)
-
-            # IMPORTANT: free memory immediately
-            del df
-
-        except Exception:
-            continue
-
-    if not hist_chunks:
-        return pd.DataFrame()
-
-    # safer concat (still OK because limited files)
-    hist = pd.concat(hist_chunks, ignore_index=True, copy=False)
-
-    hist.sort_values(["SYMBOL", "DATE1"], inplace=True)
-
-    # ========================================================
-    # RSI (SAFE VERSION - avoids full groupby transform crash)
-    # ========================================================
-
-    def rsi_group(x):
-        return calculate_rsi_14(x)
-
-    hist["RSI"] = hist.groupby("SYMBOL", group_keys=False)["CLOSE_PRICE"].apply(rsi_group)
-
-    # 14-day return (safe per group)
-    hist["RET_14D"] = hist.groupby("SYMBOL")["CLOSE_PRICE"].pct_change(14) * 100
-
-    return hist
-# ================= LOAD DATA =================
-hist = load_price_history()
 if hist.empty:
-    st.error("❌ No valid bhavcopy EQ data found")
+    st.error("❌ No valid 2026 bhavcopy EQ data found")
     st.stop()
 
-# ================= NUMERIC SAFETY =================
-num_cols = [
-    "PREV_CLOSE","OPEN_PRICE","HIGH_PRICE","LOW_PRICE",
-    "LAST_PRICE","CLOSE_PRICE","AVG_PRICE",
-    "TTL_TRD_QNTY","TURNOVER_LACS","NO_OF_TRADES",
-    "DELIV_QTY","DELIV_PER"
-]
-for c in num_cols:
-    hist[c] = pd.to_numeric(hist[c], errors="coerce")
+# ============================================================
+# LATEST SNAPSHOT
+# ============================================================
 
-# ================= LATEST SNAPSHOT =================
-latest = (
-    hist.dropna(subset=["RSI","RET_14D"])
-        .groupby("SYMBOL", as_index=False)
-        .tail(1)
-)
+latest = get_latest_snapshot(hist)
+
+#=========================================================
+
 
 # ================= STOCK SNAPSHOT =================
 st.subheader("📊 Market Wealth Insights -Summary")
