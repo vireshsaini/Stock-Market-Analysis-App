@@ -13,6 +13,7 @@ from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import inch
 from pathlib import Path
 from auth import login_screen
+from data_loader import (load_dashboard_data,get_latest_snapshot)
 
 st.set_page_config(page_title="Simple Login", layout="centered")
 
@@ -53,10 +54,7 @@ window_days = st.sidebar.selectbox(
     index=1
 )
 #=================Data loader replacement================
-from data_loader import (
-    load_dashboard_data,
-    get_latest_snapshot
-)
+
 
 # ============================================================
 # LOAD DASHBOARD DATA
