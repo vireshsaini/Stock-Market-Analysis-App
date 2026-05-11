@@ -260,7 +260,9 @@ def load_price_history(limit_files=10):
         return pd.DataFrame()
 
     # LIMIT FILES (CRITICAL FOR RENDER)
-    files = files[-limit_files:]
+    #files = files[-limit_files:]
+    files = sorted(files)[-min(limit_files, len(files)):]
+    
 
     REQUIRED_COLS = {
         "SYMBOL", "SERIES",
@@ -286,9 +288,11 @@ def load_price_history(limit_files=10):
                 continue
 
             df["SERIES"] = df["SERIES"].astype(str).str.upper().str.strip()
-            df = df[df["SERIES"].str.startswith("EQ", na=False)]
+            #df = df[df["SERIES"].str.startswith("EQ", na=False)]
+            df = df[df["SERIES"].astype(str).str.upper().str.strip().eq("EQ")]
 
-            if df.empty or not REQUIRED_COLS.issubset(df.columns):
+            missing_cols = REQUIRED_COLS - set(df.columns)
+            if len(missing_cols) > 0:
                 continue
 
             df = df[list(REQUIRED_COLS)].copy()
