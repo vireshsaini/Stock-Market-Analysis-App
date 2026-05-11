@@ -1105,7 +1105,19 @@ for _, row in latest.sort_values("AI_1Y", ascending=False).iterrows():
     if pd.isna(ser):
         continue
     ser = str(ser).strip().upper()
-    if series_alloc.get(ser, 0) >= MAX_SERIES_WEIGHT:
+    alloc = series_alloc.get(ser, 0)
+
+# Handle pandas NA safely
+    if pd.isna(alloc):
+        alloc = 0
+
+    if pd.isna(MAX_SERIES_WEIGHT):
+        MAX_SERIES_WEIGHT = 0
+
+     alloc = float(alloc)
+        max_weight = float(MAX_SERIES_WEIGHT)
+
+     if alloc >= max_weight:
         continue
 
     portfolio.append(row)
