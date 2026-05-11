@@ -73,7 +73,7 @@ BHAVCOPY_DIR = BASE_DIR / "Bhavcopy"
 
 
 @st.cache_data(ttl=600, show_spinner=True)
-def load_price_history(limit_files=10):
+def load_price_history(limit_files=60):
     """
     Render-safe version:
     - loads limited files to avoid memory crash
