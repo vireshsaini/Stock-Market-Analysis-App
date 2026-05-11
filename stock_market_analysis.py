@@ -1101,24 +1101,30 @@ for _, row in latest.sort_values("AI_1Y", ascending=False).iterrows():
     if not row["CPR_INST_VALID"]:
         continue
     ser = row.get("SERIES")
-    # handle missing/NA series
-    if pd.isna(ser):
-        continue
-    ser = str(ser).strip().upper()
-    alloc = series_alloc.get(ser, 0)
 
-# Handle pandas NA safely
-    if pd.isna(alloc):
-        alloc = 0
+# Handle missing series
+if pd.isna(ser):
+    continue
 
-    if pd.isna(MAX_SERIES_WEIGHT):
-        MAX_SERIES_WEIGHT = 0
+ser = str(ser).strip().upper()
 
-     alloc = float(alloc)
-        max_weight = float(MAX_SERIES_WEIGHT)
+# Current allocation
+alloc = series_alloc.get(ser, 0)
 
-     if alloc >= max_weight:
-        continue
+# Handle pandas NA
+if pd.isna(alloc):
+    alloc = 0
+
+# Handle missing max weight
+if pd.isna(MAX_SERIES_WEIGHT):
+    max_weight = 0
+else:
+    max_weight = float(MAX_SERIES_WEIGHT)
+
+alloc = float(alloc)
+
+if alloc >= max_weight:
+    continue
 
     portfolio.append(row)
     series_alloc[ser] = series_alloc.get(ser, 0) + row["POSITION_PCT"]
