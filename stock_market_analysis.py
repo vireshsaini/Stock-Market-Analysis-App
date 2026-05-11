@@ -1098,33 +1098,53 @@ series_alloc = {}
 
 for _, row in latest.sort_values("AI_1Y", ascending=False).iterrows():
 
+    # ========================================================
+    # VALID CPR
+    # ========================================================
+
     if not row["CPR_INST_VALID"]:
         continue
+
+    # ========================================================
+    # SERIES
+    # ========================================================
+
     ser = row.get("SERIES")
 
-# Handle missing series
-if pd.isna(ser):
-    continue
+    # Handle missing series
+    if pd.isna(ser):
+        continue
 
-ser = str(ser).strip().upper()
+    ser = str(ser).strip().upper()
 
-# Current allocation
-alloc = series_alloc.get(ser, 0)
+    # ========================================================
+    # CURRENT ALLOCATION
+    # ========================================================
 
-# Handle pandas NA
-if pd.isna(alloc):
-    alloc = 0
+    alloc = series_alloc.get(ser, 0)
 
-# Handle missing max weight
-if pd.isna(MAX_SERIES_WEIGHT):
-    max_weight = 0
-else:
+    # Handle pandas NA
+    if pd.isna(alloc):
+        alloc = 0
+
+    alloc = float(alloc)
+
+    # ========================================================
+    # MAX WEIGHT
+    # ========================================================
+
     max_weight = float(MAX_SERIES_WEIGHT)
 
-alloc = float(alloc)
+    if alloc >= max_weight:
+        continue
 
-if alloc >= max_weight:
-    continue
+    # ========================================================
+    # ADD TO PORTFOLIO
+    # ========================================================
+
+    portfolio.append(row)
+
+    series_alloc[ser] = alloc + 1
 
     portfolio.append(row)
     series_alloc[ser] = series_alloc.get(ser, 0) + row["POSITION_PCT"]
