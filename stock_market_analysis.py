@@ -1100,8 +1100,11 @@ for _, row in latest.sort_values("AI_1Y", ascending=False).iterrows():
 
     if not row["CPR_INST_VALID"]:
         continue
-
-    ser = row["SERIES"]
+    ser = row.get("SERIES")
+    # handle missing/NA series
+    if pd.isna(ser):
+        continue
+    ser = str(ser).strip().upper()
     if series_alloc.get(ser, 0) >= MAX_SERIES_WEIGHT:
         continue
 
