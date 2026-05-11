@@ -88,7 +88,7 @@ def load_price_history(limit_files=360):
 
     # LIMIT FILES (CRITICAL FOR RENDER)
     #files = files[-limit_files:]
-    limit_files = 30
+    limit_files = 360
     files = sorted(files)[-min(limit_files, len(files)):]
     
 
