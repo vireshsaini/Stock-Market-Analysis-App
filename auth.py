@@ -130,7 +130,29 @@ def authenticate(username, password, df):
 # ============================================================
 # LOGIN MANAGER
 # ============================================================
+ #==============Added on 12-MAY================================
+# ============================================================
+# PROJECT PATHS
+# ============================================================
+
+BASE_DIR = Path(__file__).resolve().parent
+
+USER_DIR = BASE_DIR / "User"
+
+CRED_FILE = USER_DIR / "Credential.csv"
+
+BG_IMAGE = USER_DIR / "background.png"
+
+
+# ============================================================
+# LOGIN SCREEN
+# ============================================================
+
 def login_screen():
+
+    # ========================================================
+    # LOAD USERS
+    # ========================================================
 
     if "users_df" not in st.session_state:
 
@@ -144,32 +166,108 @@ def login_screen():
 
     if "auth" not in st.session_state:
 
-        st.title("🔐 Login")
+        # ====================================================
+        # APPLY BACKGROUND
+        # ====================================================
 
-        username = st.text_input("Username")
-        password = st.text_input("Password", type="password")
+        set_bg(BG_IMAGE)
+
+        # ====================================================
+        # LOGIN WRAPPER
+        # ====================================================
+
+        st.markdown(
+            '<div class="login-wrapper"><div class="login-box">',
+            unsafe_allow_html=True
+        )
+
+        # ====================================================
+        # LOGIN TITLE
+        # ====================================================
+
+        st.markdown(
+            '<div class="login-title">🔐 Login</div>',
+            unsafe_allow_html=True
+        )
+
+        st.markdown(
+            '<div class="login-divider"></div>',
+            unsafe_allow_html=True
+        )
+
+        # ====================================================
+        # USERNAME
+        # ====================================================
+
+        st.markdown(
+            '<div class="custom-label">Username</div>',
+            unsafe_allow_html=True
+        )
+
+        username = st.text_input(
+            "",
+            key="user",
+            label_visibility="collapsed"
+        )
+
+        # ====================================================
+        # PASSWORD
+        # ====================================================
+
+        st.markdown(
+            '<div class="custom-label">Password</div>',
+            unsafe_allow_html=True
+        )
+
+        password = st.text_input(
+            "",
+            type="password",
+            key="pass",
+            label_visibility="collapsed"
+        )
+
+        # ====================================================
+        # LOGIN BUTTON
+        # ====================================================
 
         if st.button("Login"):
 
-            ok, result = authenticate(username, password, df)
+            ok, result = authenticate(
+                username,
+                password,
+                df
+            )
 
             if not ok:
 
                 st.error(f"❌ {result}")
+
                 st.stop()
 
             st.session_state.auth = {
+
                 "username": result["UNAME"],
+
                 "role": result["ROLE"],
+
                 "expiry": result["EXP"]
             }
 
             st.success("✅ Login successful")
+
             st.rerun()
 
+        # ====================================================
+        # CLOSE HTML DIVS
+        # ====================================================
+
+        st.markdown(
+            "</div></div>",
+            unsafe_allow_html=True
+        )
+
         st.stop()
-
-
+   #==============Added on 12-MAY================================
     # ========================================================
     # AUTO LOGOUT ON EXPIRY
     # ========================================================
