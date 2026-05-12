@@ -3,7 +3,7 @@ import pandas as pd
 import os
 from pathlib import Path
 from datetime import datetime
-from ui_styles import set_bg
+from login_ui_style import set_bg
 
 # ============================================================
 # CONFIG
