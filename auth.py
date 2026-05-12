@@ -177,7 +177,7 @@ def login_screen():
         # ====================================================
 
         st.markdown(
-            '<div class="login-wrapper"><div class="login-box">',
+            '<div class="login-wrapper">',
             unsafe_allow_html=True
         )
 
