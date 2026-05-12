@@ -184,7 +184,7 @@ def set_bg(image_file=None):
 
                 background-color: rgba(0, 85, 255, 0.15) !important;
 
-                color: white !important;
+                color: blue !important;
 
                 border: 1px solid #1f77ff !important;
 
