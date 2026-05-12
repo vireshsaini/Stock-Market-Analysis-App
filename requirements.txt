@@ -11,3 +11,4 @@ xlsxwriter
 plotly
 reportlab
 #pathlib 
+base64
