@@ -3,7 +3,7 @@ import pandas as pd
 import os
 from pathlib import Path
 from datetime import datetime
-
+from ui_styles import set_bg
 
 # ============================================================
 # CONFIG
@@ -13,7 +13,7 @@ BASE_DIR = Path(__file__).resolve().parent
 
 USER_DIR = BASE_DIR / "User"
 CRED_FILE = USER_DIR / "Credential.csv"
-
+BG_IMAGE = USER_DIR / "background.png"
 
 # ============================================================
 # SAFE EXPIRY PARSER
@@ -130,7 +130,6 @@ def authenticate(username, password, df):
 # ============================================================
 # LOGIN MANAGER
 # ============================================================
-
 def login_screen():
 
     if "users_df" not in st.session_state:
@@ -169,6 +168,7 @@ def login_screen():
             st.rerun()
 
         st.stop()
+
 
     # ========================================================
     # AUTO LOGOUT ON EXPIRY
