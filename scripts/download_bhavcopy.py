@@ -43,9 +43,9 @@ MAX_RETRIES = 20
 
 for attempt in range(MAX_RETRIES):
 
-print(
+    print(
     f"Attempt {attempt + 1}/{MAX_RETRIES}"
-)
+    )
 
 try:
 
@@ -75,17 +75,11 @@ try:
     print(
         f"HTTP {response.status_code}"
     )
-
 except Exception as e:
-
     print(e)
 
 time.sleep(60)
-
-
 else:
-
-
 raise Exception(
     "File not available "
     "after 20 retries."
