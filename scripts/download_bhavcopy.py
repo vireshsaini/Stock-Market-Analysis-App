@@ -11,8 +11,8 @@ today = datetime.utcnow()
 # Skip Saturday/Sunday
 
 if today.weekday() >= 5:
-print("Weekend - Market Closed")
-raise SystemExit(0)
+    print("Weekend - Market Closed")
+    raise SystemExit(0)
 
 date_str = today.strftime("%d%m%Y")
 
@@ -23,8 +23,8 @@ file_path = SAVE_DIR / filename
 # Prevent duplicate download
 
 if file_path.exists():
-print(f"{filename} already exists")
-raise SystemExit(0)
+    print(f"{filename} already exists")
+    raise SystemExit(0)
 
 url = (
 f"https://nsearchives.nseindia.com/"
@@ -43,7 +43,6 @@ MAX_RETRIES = 20
 
 for attempt in range(MAX_RETRIES):
 
-```
 print(
     f"Attempt {attempt + 1}/{MAX_RETRIES}"
 )
