@@ -27,60 +27,65 @@ if file_path.exists():
     raise SystemExit(0)
 
 url = (
-f"https://nsearchives.nseindia.com/"
-f"products/content/{filename}"
+    f"https://nsearchives.nseindia.com/"
+    f"products/content/{filename}"
 )
 
 headers = {
-"User-Agent": (
-"Mozilla/5.0 "
-"(Windows NT 10.0; Win64; x64)"
-),
-"Referer": "https://www.nseindia.com/"
+    "User-Agent": (
+        "Mozilla/5.0 "
+        "(Windows NT 10.0; Win64; x64)"
+    ),
+    "Referer": "https://www.nseindia.com/",
+    "Accept-Language": "en-US,en;q=0.9",
+    "Accept-Encoding": "gzip, deflate, br",
+    "Connection": "keep-alive",
 }
+
+session = requests.Session()
+session.headers.update(headers)
 
 MAX_RETRIES = 20
 
 for attempt in range(MAX_RETRIES):
 
     print(
-    f"Attempt {attempt + 1}/{MAX_RETRIES}"
+        f"Attempt {attempt + 1}/{MAX_RETRIES}"
     )
 
-try:
+    try:
 
-    response = requests.get(
-        url,
-        headers=headers,
-        timeout=30
-    )
-
-    if response.status_code == 200:
-
-        with open(
-            file_path,
-            "wb"
-        ) as f:
-
-            f.write(
-                response.content
-            )
-
-        print(
-            f"Downloaded {filename}"
+        response = session.get(
+            url,
+            timeout=30
         )
 
-        break
+        if response.status_code == 200:
 
-    print(
-        f"HTTP {response.status_code}"
-    )
-except Exception as e:
-    print(e)
+            with open(
+                file_path,
+                "wb"
+            ) as f:
 
-time.sleep(60)
+                f.write(
+                    response.content
+                )
+
+            print(
+                f"Downloaded {filename}"
+            )
+
+            break
+
+        print(
+            f"HTTP {response.status_code}"
+        )
+    except Exception as e:
+        print(e)
+
+    time.sleep(60)
 else:
-raise Exception(
-    "File not available "
-    "after 20 retries."
-)
+    raise Exception(
+        "File not available "
+        "after 20 retries."
+    )
