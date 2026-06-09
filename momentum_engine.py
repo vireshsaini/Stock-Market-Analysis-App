@@ -65,11 +65,14 @@ def compute_weekly_rsi(hist_nd):
         ["SYMBOL", "DATE1"]
     )
 
-    weekly_data["RSI_WEEKLY"] = (
-        weekly_data.groupby("SYMBOL")["CLOSE_PRICE"]
-        .apply(lambda x: rsi(x, 14))
-        .reset_index(level=0, drop=True)
-    )
+    #weekly_data["RSI_WEEKLY"] = (
+    #    weekly_data.groupby("SYMBOL")["CLOSE_PRICE"]
+    #    .apply(lambda x: rsi(x, 14))
+    #    .reset_index(level=0, drop=True)
+    #)
+    
+    weekly_data["RSI_WEEKLY"] = (weekly_data.groupby("SYMBOL")["CLOSE_PRICE"].transform(rsi))
+    
 
     latest_weekly_rsi = (
         weekly_data
@@ -150,10 +153,12 @@ def build_momentum_universe(hist, rolling_dates):
     # DAILY RSI
     # =========================================================
 
-    hist_nd["RSI_DAILY"] = (
-        hist_nd.groupby("SYMBOL")["CLOSE_PRICE"]
-        .transform(lambda x: rsi(x, 14))
-    )
+   # hist_nd["RSI_DAILY"] = (
+    #    hist_nd.groupby("SYMBOL")["CLOSE_PRICE"]
+    #    .transform(lambda x: rsi(x, 14))
+    #)
+    
+    hist_nd["RSI_DAILY"] = (hist_nd.groupby("SYMBOL")["CLOSE_PRICE"].transform(rsi))
 
     # =========================================================
     # WEEKLY RSI
@@ -178,6 +183,9 @@ def build_momentum_universe(hist, rolling_dates):
         latest["TTL_TRD_QNTY"]
         * latest["CLOSE_PRICE"]
     )
+    
+    latest = latest.drop(columns=["VALUE_TRADED"],errors="ignore")
+
 
     # =========================================================
     # VWAP
@@ -291,6 +299,23 @@ def build_momentum_universe(hist, rolling_dates):
     # =========================================================
     # MOMENTUM FILTER
     # =========================================================
+    
+    print("Rank DF Shape :", rank_df.shape)
+
+    print(
+    rank_df[
+        [
+            "SYMBOL",
+            "RSI_DAILY",
+            "RSI_WEEKLY",
+            "VWAP",
+            "VALUE_TRADED",
+            "DAILY_VALUE_TRADED"
+        ]
+    ].head())
+
+
+    print("Filtered Count :", len(filtered))
 
     filtered = rank_df[
         (rank_df["CLOSE_PRICE"] > rank_df["VWAP"]) &
