@@ -14,6 +14,9 @@ from reportlab.lib.units import inch
 from pathlib import Path
 from auth1 import login_screen
 from data_loader import (load_dashboard_data,get_latest_snapshot)
+from technical_dashboard import render_trading_dashboard
+from momentum_engine import (build_momentum_universe)
+    
 
 
 st.set_page_config(page_title="Simple Login", layout="centered")
@@ -510,6 +513,66 @@ st.success(f"✅ Stocks Found: {len(filtered)}")
 # MERGE VWAP WITH LATEST DATA -- Added CR on Rohit  Recommendation on new requirement -  28-MAY-26
 # ==================================================================================================
 
+#===================================================================================================#
+#CODE ADDED FOR DAILY RSI AND WEEKLY RSI CALULATION CHANGE ON 09- JUNE -  2006
+#===================================================================================================#
+
+
+# =========================================================
+# CALL ENGINE
+# =========================================================
+
+filtered = build_momentum_universe(
+    hist,
+    rolling_dates
+)
+
+# =========================================================
+# DISPLAY
+# =========================================================
+
+st.subheader(
+    "📊 Top Institutional Strong Buying Momentum Stocks"
+)
+
+display_cols = [
+    "SYMBOL",
+    "CLOSE_PRICE",
+    "TTL_TRD_QNTY",
+    "VWAP",
+    "TC",
+    "DAILY_VALUE_TRADED (Cr)",
+    "VALUE_TRADED (Cr)",
+    "RSI_DAILY",
+    "RSI_WEEKLY",
+    "DELIV_PER",
+    "RANK",
+    "SIGNAL"
+]
+
+st.dataframe(
+    filtered[display_cols].style.format({
+        "VWAP": "{:.2f}",
+        "TC": "{:.2f}",
+        "CLOSE_PRICE": "{:.2f}",
+        "DAILY_VALUE_TRADED (Cr)": "{:.2f}",
+        "VALUE_TRADED (Cr)": "{:.2f}",
+        "RSI_DAILY": "{:.2f}",
+        "RSI_WEEKLY": "{:.2f}",
+        "DELIV_PER": "{:.2f}"
+    }),
+    use_container_width=True
+)
+
+st.success(
+    f"✅ Stocks Found: {len(filtered)}"
+)
+
+#===================================================================================================#
+#CODE ADDED FOR DAILY RSI AND WEEKLY RSI CALULATION CHANGE ON 09- JUNE -  2006
+#===================================================================================================#
+
+
 # ================= SECTOR ROTATION =================
 st.subheader("🔄 Sector Capital Rotation")
 
@@ -920,6 +983,11 @@ st.info(
     "when institutional buying or selling occurred within the selected rolling window. "
     "This helps distinguish **fresh accumulation** from **older activity**, aiding better decisions."
 )
+
+#====================MACD-EMA=====08 JUNE- 2026============================
+render_trading_dashboard(hist)
+#====================MACD-EMA=====08 JUNE- 2026============================
+
 
 # ============================================================
 # 📈 TRADER VIEW DASHBOARD – SYMBOL | PRICE | VOLUME | TIME
