@@ -190,7 +190,7 @@ def build_momentum_universe(hist, rolling_dates):
         (rank_df["RSI_DAILY"] > 35) &
         (rank_df["RSI_DAILY"] < 50) &
         (rank_df["RSI_WEEKLY"] > 60) &
-        (rank_df["DAILY_VALUE_TRADED"] > 10000000) &
+        (rank_df["DAILY_VALUE_TRADED"] > 10000000) &    
         (rank_df["VALUE_TRADED"] > 10000000)
     ].copy()
 
