@@ -17,6 +17,8 @@ from data_loader import (load_dashboard_data,get_latest_snapshot)
 from technical_dashboard import render_trading_dashboard
 from momentum_engine import build_momentum_universe
     
+
+
 st.set_page_config(page_title="Simple Login", layout="centered")
 
 # LOGIN
@@ -193,323 +195,323 @@ st.plotly_chart(
 # IMPORTS
 # =========================================================
 
-import pandas as pd
-import numpy as np
-import streamlit as st
-
-# =========================================================
-# CREATE WORKING DATAFRAME
-# =========================================================
-
-hist_nd = (
-    hist[hist["DATE1"].isin(rolling_dates)]
-    .copy()
-)
-
-# =========================================================
-# CLEAN DATA
-# =========================================================
-
-hist_nd["DATE1"] = pd.to_datetime(hist_nd["DATE1"], errors="coerce")
-
-cols = [
-    "CLOSE_PRICE",
-    "OPEN_PRICE",
-    "HIGH_PRICE",
-    "LOW_PRICE",
-    "TTL_TRD_QNTY",
-    "DELIV_QTY",
-    "DELIV_PER"
-]
-
-for c in cols:
-    hist_nd[c] = (
-        hist_nd[c]
-        .astype(str)
-        .str.replace(",", "", regex=False)
-    )
-    hist_nd[c] = pd.to_numeric(hist_nd[c], errors="coerce")
-
-hist_nd = hist_nd.dropna(subset=["SYMBOL", "DATE1", "CLOSE_PRICE"])
-hist_nd = hist_nd.sort_values(["SYMBOL", "DATE1"])
-
-# =========================================================
-# VALUE TRADED
-# =========================================================
-
-hist_nd["VALUE_TRADED"] = (
-    hist_nd["TTL_TRD_QNTY"] * hist_nd["CLOSE_PRICE"]
-)
-
-# =========================================================
-# RSI FUNCTION
-# =========================================================
-
-def rsi(series, period=14):
-    delta = series.diff()
-
-    gain = delta.clip(lower=0)
-    loss = -delta.clip(upper=0)
-
-    avg_gain = gain.ewm(alpha=1/period, adjust=False).mean()
-    avg_loss = loss.ewm(alpha=1/period, adjust=False).mean()
-
-    rs = avg_gain / avg_loss.replace(0, np.nan)
-
-    return 100 - (100 / (1 + rs))
-
-# =========================================================
-# DAILY RSI
-# =========================================================
-
-hist_nd["RSI_DAILY"] = (
-    hist_nd.groupby("SYMBOL")["CLOSE_PRICE"].transform(rsi)
-)
-
-# =========================================================
-# WEEKLY RSI
-# =========================================================
-
-weekly_data = (
-    hist_nd.set_index("DATE1")
-    .groupby("SYMBOL")["CLOSE_PRICE"]
-    .resample("W-FRI")
-    .last()
-    .reset_index()
-)
-
-weekly_data["RSI_WEEKLY"] = (
-    weekly_data.groupby("SYMBOL")["CLOSE_PRICE"].transform(rsi)
-)
-
-latest_weekly_rsi = (
-    weekly_data
-    .dropna(subset=["RSI_WEEKLY"])
-    .sort_values(["SYMBOL", "DATE1"])
-    .groupby("SYMBOL")
-    .tail(1)[["SYMBOL", "RSI_WEEKLY"]]
-)
-
-# =========================================================
-# LATEST DATA
-# =========================================================
-
-latest = (
-    hist_nd
-    .sort_values(["SYMBOL", "DATE1"])
-    .groupby("SYMBOL")
-    .tail(1)
-)
-
-# =========================================================
-# DAILY VALUE TRADED
-# =========================================================
-
-latest["DAILY_VALUE_TRADED"] = (
-    latest["TTL_TRD_QNTY"] * latest["CLOSE_PRICE"]
-)
-
-latest = latest.drop(columns=["VALUE_TRADED"], errors="ignore")
-
-# =========================================================
-# VWAP
-# =========================================================
-
-vwap = (
-    hist_nd.groupby("SYMBOL")
-    .apply(
-        lambda x: (
-            (x["CLOSE_PRICE"] * x["DELIV_QTY"]).sum()
-            / x["DELIV_QTY"].sum()
-        )
-        if x["DELIV_QTY"].sum() != 0 else np.nan
-    )
-    .reset_index(name="VWAP")
-)
-
-# =========================================================
-# VALUE TRADED (ROLLING SUM)
-# =========================================================
-
-value_traded_df = (
-    hist_nd.groupby("SYMBOL", as_index=False)
-    .agg(VALUE_TRADED=("VALUE_TRADED", "sum"))
-)
-
-# =========================================================
-# MERGE
-# =========================================================
-
-rank_df = latest.copy()
-
-rank_df = rank_df.merge(vwap, on="SYMBOL", how="left")
-rank_df = rank_df.merge(latest_weekly_rsi, on="SYMBOL", how="left")
-rank_df = rank_df.merge(value_traded_df, on="SYMBOL", how="left")
-
-# =========================================================
-# SAFE FILL
-# =========================================================
-
-rank_df["RSI_DAILY"] = rank_df["RSI_DAILY"].fillna(0)
-rank_df["RSI_WEEKLY"] = rank_df["RSI_WEEKLY"].fillna(0)
-rank_df["VALUE_TRADED"] = rank_df["VALUE_TRADED"].fillna(0)
-rank_df["DAILY_VALUE_TRADED"] = rank_df["DAILY_VALUE_TRADED"].fillna(0)
-
-# =========================================================
-# CPR
-# =========================================================
-
-rank_df["PIVOT"] = (
-    rank_df["HIGH_PRICE"] +
-    rank_df["LOW_PRICE"] +
-    rank_df["CLOSE_PRICE"]
-) / 3
-
-rank_df["BC"] = (
-    rank_df["HIGH_PRICE"] +
-    rank_df["LOW_PRICE"]
-) / 2
-
-rank_df["TC"] = (2 * rank_df["PIVOT"]) - rank_df["BC"]
-
-# =========================================================
-# FILTER (Institutional Momentum Universe)
-# =========================================================
-
-filtered = rank_df[
-    (rank_df["CLOSE_PRICE"] > rank_df["VWAP"]) &
-    (rank_df["CLOSE_PRICE"] > 10) &
-    (rank_df["DELIV_PER"] > 30) &
-    (rank_df["RSI_DAILY"] > 35) &
-    (rank_df["RSI_DAILY"] < 50) &
-    (rank_df["RSI_WEEKLY"] > 60) &
-    (rank_df["DAILY_VALUE_TRADED"] > 10000000) &
-    (rank_df["VALUE_TRADED"] > 10000000)
-].copy()
-
-# =========================================================
-# ================== SCORING ENGINE ======================
-# =========================================================
-
-filtered["VWAP_STRENGTH"] = (
-    (filtered["CLOSE_PRICE"] - filtered["VWAP"]) / filtered["VWAP"]
-) * 100
-
-filtered["CPR_STRENGTH"] = (
-    (filtered["CLOSE_PRICE"] - filtered["TC"]) / filtered["TC"]
-) * 100
-
-filtered["VOL_STRENGTH"] = (
-    filtered["TTL_TRD_QNTY"] / filtered["TTL_TRD_QNTY"].max()
-) * 100
-
-filtered["RSI"] = filtered["RSI_DAILY"]
-
-filtered["RAW_SCORE"] = (
-    filtered["VWAP_STRENGTH"] * 0.20 +
-    filtered["DELIV_PER"] * 0.25 +
-    filtered["RSI"] * 0.20 +
-    filtered["CPR_STRENGTH"] * 0.15 +
-    filtered["VOL_STRENGTH"] * 0.20
-)
-
-filtered["RAW_SCORE"] = pd.to_numeric(filtered["RAW_SCORE"], errors="coerce")
-
-filtered["RANK"] = (
-    (filtered["RAW_SCORE"] / filtered["RAW_SCORE"].max()) * 10
-).fillna(0).round().clip(1, 10).astype(int)
-
-# =========================================================
-# SIGNAL ENGINE
-# =========================================================
-
-filtered["SIGNAL"] = filtered["RANK"].apply(
-    lambda x:
-        "🔥 SUPER BUY" if x >= 9 else
-        "🟢 STRONG BUY" if x >= 8 else
-        "🟡 BUY" if x >= 7 else
-        "⚠ WATCH"
-)
-
-# =========================================================
-# CONVERT TO CRORES
-# =========================================================
-
-filtered["DAILY_VALUE_TRADED (Cr)"] = (
-    filtered["DAILY_VALUE_TRADED"] / 10000000
-).round(2)
-
-filtered["VALUE_TRADED (Cr)"] = (
-    filtered["VALUE_TRADED"] / 10000000
-).round(2)
-
-filtered.drop(
-    columns=["DAILY_VALUE_TRADED", "VALUE_TRADED"],
-    inplace=True
-)
-
-# =========================================================
-# ROUND VALUES
-# =========================================================
-
-filtered["RSI_DAILY"] = filtered["RSI_DAILY"].round(2)
-filtered["RSI_WEEKLY"] = filtered["RSI_WEEKLY"].round(2)
-
-# =========================================================
-# SORTING
-# =========================================================
-
-filtered = filtered.sort_values(
-    by=["RANK", "DELIV_PER", "RSI_DAILY", "TTL_TRD_QNTY"],
-    ascending=False
-)
-
-# =========================================================
-# DISPLAY
-# =========================================================
-
-st.subheader("📊 Top Institutional Momentum Stocks")
-
-st.dataframe(
-    filtered[
-        [
-            "SYMBOL",
-            "CLOSE_PRICE",
-            "TTL_TRD_QNTY",
-            "VWAP",
-            "TC",
-            "DAILY_VALUE_TRADED (Cr)",
-            "VALUE_TRADED (Cr)",
-            "RSI_DAILY",
-            "RSI_WEEKLY",
-            "DELIV_PER",
-            "RANK",
-            "SIGNAL"
-        ]
-    ].style.format({
-        "VWAP": "{:.2f}",
-        "TC": "{:.2f}",
-        "CLOSE_PRICE": "{:.2f}",
-        "DAILY_VALUE_TRADED (Cr)": "{:.2f}",
-        "VALUE_TRADED (Cr)": "{:.2f}",
-        "RSI_DAILY": "{:.2f}",
-        "RSI_WEEKLY": "{:.2f}",
-        "DELIV_PER": "{:.2f}"
-    }).set_properties(**{"text-align": "right"})
-      .set_properties(subset=["SYMBOL", "SIGNAL"], **{"text-align": "left"}),
-    use_container_width=True
-)
-
-# =========================================================
-# SUMMARY
-# =========================================================
-
-st.success(f"✅ Stocks Found: {len(filtered)}")
-
-
-# =================================================================================================
-# MERGE VWAP WITH LATEST DATA -- Added CR on Rohit  Recommendation on new requirement -  28-MAY-26
-# ==================================================================================================
+# import pandas as pd
+# import numpy as np
+# import streamlit as st
+
+# # =========================================================
+# # CREATE WORKING DATAFRAME
+# # =========================================================
+
+# hist_nd = (
+#     hist[hist["DATE1"].isin(rolling_dates)]
+#     .copy()
+# )
+
+# # =========================================================
+# # CLEAN DATA
+# # =========================================================
+
+# hist_nd["DATE1"] = pd.to_datetime(hist_nd["DATE1"], errors="coerce")
+
+# cols = [
+#     "CLOSE_PRICE",
+#     "OPEN_PRICE",
+#     "HIGH_PRICE",
+#     "LOW_PRICE",
+#     "TTL_TRD_QNTY",
+#     "DELIV_QTY",
+#     "DELIV_PER"
+# ]
+
+# for c in cols:
+#     hist_nd[c] = (
+#         hist_nd[c]
+#         .astype(str)
+#         .str.replace(",", "", regex=False)
+#     )
+#     hist_nd[c] = pd.to_numeric(hist_nd[c], errors="coerce")
+
+# hist_nd = hist_nd.dropna(subset=["SYMBOL", "DATE1", "CLOSE_PRICE"])
+# hist_nd = hist_nd.sort_values(["SYMBOL", "DATE1"])
+
+# # =========================================================
+# # VALUE TRADED
+# # =========================================================
+
+# hist_nd["VALUE_TRADED"] = (
+#     hist_nd["TTL_TRD_QNTY"] * hist_nd["CLOSE_PRICE"]
+# )
+
+# # =========================================================
+# # RSI FUNCTION
+# # =========================================================
+
+# def rsi(series, period=14):
+#     delta = series.diff()
+
+#     gain = delta.clip(lower=0)
+#     loss = -delta.clip(upper=0)
+
+#     avg_gain = gain.ewm(alpha=1/period, adjust=False).mean()
+#     avg_loss = loss.ewm(alpha=1/period, adjust=False).mean()
+
+#     rs = avg_gain / avg_loss.replace(0, np.nan)
+
+#     return 100 - (100 / (1 + rs))
+
+# # =========================================================
+# # DAILY RSI
+# # =========================================================
+
+# hist_nd["RSI_DAILY"] = (
+#     hist_nd.groupby("SYMBOL")["CLOSE_PRICE"].transform(rsi)
+# )
+
+# # =========================================================
+# # WEEKLY RSI
+# # =========================================================
+
+# weekly_data = (
+#     hist_nd.set_index("DATE1")
+#     .groupby("SYMBOL")["CLOSE_PRICE"]
+#     .resample("W-FRI")
+#     .last()
+#     .reset_index()
+# )
+
+# weekly_data["RSI_WEEKLY"] = (
+#     weekly_data.groupby("SYMBOL")["CLOSE_PRICE"].transform(rsi)
+# )
+
+# latest_weekly_rsi = (
+#     weekly_data
+#     .dropna(subset=["RSI_WEEKLY"])
+#     .sort_values(["SYMBOL", "DATE1"])
+#     .groupby("SYMBOL")
+#     .tail(1)[["SYMBOL", "RSI_WEEKLY"]]
+# )
+
+# # =========================================================
+# # LATEST DATA
+# # =========================================================
+
+# latest = (
+#     hist_nd
+#     .sort_values(["SYMBOL", "DATE1"])
+#     .groupby("SYMBOL")
+#     .tail(1)
+# )
+
+# # =========================================================
+# # DAILY VALUE TRADED
+# # =========================================================
+
+# latest["DAILY_VALUE_TRADED"] = (
+#     latest["TTL_TRD_QNTY"] * latest["CLOSE_PRICE"]
+# )
+
+# latest = latest.drop(columns=["VALUE_TRADED"], errors="ignore")
+
+# # =========================================================
+# # VWAP
+# # =========================================================
+
+# vwap = (
+#     hist_nd.groupby("SYMBOL")
+#     .apply(
+#         lambda x: (
+#             (x["CLOSE_PRICE"] * x["DELIV_QTY"]).sum()
+#             / x["DELIV_QTY"].sum()
+#         )
+#         if x["DELIV_QTY"].sum() != 0 else np.nan
+#     )
+#     .reset_index(name="VWAP")
+# )
+
+# # =========================================================
+# # VALUE TRADED (ROLLING SUM)
+# # =========================================================
+
+# value_traded_df = (
+#     hist_nd.groupby("SYMBOL", as_index=False)
+#     .agg(VALUE_TRADED=("VALUE_TRADED", "sum"))
+# )
+
+# # =========================================================
+# # MERGE
+# # =========================================================
+
+# rank_df = latest.copy()
+
+# rank_df = rank_df.merge(vwap, on="SYMBOL", how="left")
+# rank_df = rank_df.merge(latest_weekly_rsi, on="SYMBOL", how="left")
+# rank_df = rank_df.merge(value_traded_df, on="SYMBOL", how="left")
+
+# # =========================================================
+# # SAFE FILL
+# # =========================================================
+
+# rank_df["RSI_DAILY"] = rank_df["RSI_DAILY"].fillna(0)
+# rank_df["RSI_WEEKLY"] = rank_df["RSI_WEEKLY"].fillna(0)
+# rank_df["VALUE_TRADED"] = rank_df["VALUE_TRADED"].fillna(0)
+# rank_df["DAILY_VALUE_TRADED"] = rank_df["DAILY_VALUE_TRADED"].fillna(0)
+
+# # =========================================================
+# # CPR
+# # =========================================================
+
+# rank_df["PIVOT"] = (
+#     rank_df["HIGH_PRICE"] +
+#     rank_df["LOW_PRICE"] +
+#     rank_df["CLOSE_PRICE"]
+# ) / 3
+
+# rank_df["BC"] = (
+#     rank_df["HIGH_PRICE"] +
+#     rank_df["LOW_PRICE"]
+# ) / 2
+
+# rank_df["TC"] = (2 * rank_df["PIVOT"]) - rank_df["BC"]
+
+# # =========================================================
+# # FILTER (Institutional Momentum Universe)
+# # =========================================================
+
+# filtered = rank_df[
+#     (rank_df["CLOSE_PRICE"] > rank_df["VWAP"]) &
+#     (rank_df["CLOSE_PRICE"] > 10) &
+#     (rank_df["DELIV_PER"] > 30) &
+#     (rank_df["RSI_DAILY"] > 35) &
+#     (rank_df["RSI_DAILY"] < 50) &
+#     (rank_df["RSI_WEEKLY"] > 60) &
+#     (rank_df["DAILY_VALUE_TRADED"] > 10000000) &
+#     (rank_df["VALUE_TRADED"] > 10000000)
+# ].copy()
+
+# # =========================================================
+# # ================== SCORING ENGINE ======================
+# # =========================================================
+
+# filtered["VWAP_STRENGTH"] = (
+#     (filtered["CLOSE_PRICE"] - filtered["VWAP"]) / filtered["VWAP"]
+# ) * 100
+
+# filtered["CPR_STRENGTH"] = (
+#     (filtered["CLOSE_PRICE"] - filtered["TC"]) / filtered["TC"]
+# ) * 100
+
+# filtered["VOL_STRENGTH"] = (
+#     filtered["TTL_TRD_QNTY"] / filtered["TTL_TRD_QNTY"].max()
+# ) * 100
+
+# filtered["RSI"] = filtered["RSI_DAILY"]
+
+# filtered["RAW_SCORE"] = (
+#     filtered["VWAP_STRENGTH"] * 0.20 +
+#     filtered["DELIV_PER"] * 0.25 +
+#     filtered["RSI"] * 0.20 +
+#     filtered["CPR_STRENGTH"] * 0.15 +
+#     filtered["VOL_STRENGTH"] * 0.20
+# )
+
+# filtered["RAW_SCORE"] = pd.to_numeric(filtered["RAW_SCORE"], errors="coerce")
+
+# filtered["RANK"] = (
+#     (filtered["RAW_SCORE"] / filtered["RAW_SCORE"].max()) * 10
+# ).fillna(0).round().clip(1, 10).astype(int)
+
+# # =========================================================
+# # SIGNAL ENGINE
+# # =========================================================
+
+# filtered["SIGNAL"] = filtered["RANK"].apply(
+#     lambda x:
+#         "🔥 SUPER BUY" if x >= 9 else
+#         "🟢 STRONG BUY" if x >= 8 else
+#         "🟡 BUY" if x >= 7 else
+#         "⚠ WATCH"
+# )
+
+# # =========================================================
+# # CONVERT TO CRORES
+# # =========================================================
+
+# filtered["DAILY_VALUE_TRADED (Cr)"] = (
+#     filtered["DAILY_VALUE_TRADED"] / 10000000
+# ).round(2)
+
+# filtered["VALUE_TRADED (Cr)"] = (
+#     filtered["VALUE_TRADED"] / 10000000
+# ).round(2)
+
+# filtered.drop(
+#     columns=["DAILY_VALUE_TRADED", "VALUE_TRADED"],
+#     inplace=True
+# )
+
+# # =========================================================
+# # ROUND VALUES
+# # =========================================================
+
+# filtered["RSI_DAILY"] = filtered["RSI_DAILY"].round(2)
+# filtered["RSI_WEEKLY"] = filtered["RSI_WEEKLY"].round(2)
+
+# # =========================================================
+# # SORTING
+# # =========================================================
+
+# filtered = filtered.sort_values(
+#     by=["RANK", "DELIV_PER", "RSI_DAILY", "TTL_TRD_QNTY"],
+#     ascending=False
+# )
+
+# # =========================================================
+# # DISPLAY
+# # =========================================================
+
+# st.subheader("📊 Top Institutional Momentum Stocks")
+
+# st.dataframe(
+#     filtered[
+#         [
+#             "SYMBOL",
+#             "CLOSE_PRICE",
+#             "TTL_TRD_QNTY",
+#             "VWAP",
+#             "TC",
+#             "DAILY_VALUE_TRADED (Cr)",
+#             "VALUE_TRADED (Cr)",
+#             "RSI_DAILY",
+#             "RSI_WEEKLY",
+#             "DELIV_PER",
+#             "RANK",
+#             "SIGNAL"
+#         ]
+#     ].style.format({
+#         "VWAP": "{:.2f}",
+#         "TC": "{:.2f}",
+#         "CLOSE_PRICE": "{:.2f}",
+#         "DAILY_VALUE_TRADED (Cr)": "{:.2f}",
+#         "VALUE_TRADED (Cr)": "{:.2f}",
+#         "RSI_DAILY": "{:.2f}",
+#         "RSI_WEEKLY": "{:.2f}",
+#         "DELIV_PER": "{:.2f}"
+#     }).set_properties(**{"text-align": "right"})
+#       .set_properties(subset=["SYMBOL", "SIGNAL"], **{"text-align": "left"}),
+#     use_container_width=True
+# )
+
+# # =========================================================
+# # SUMMARY
+# # =========================================================
+
+# st.success(f"✅ Stocks Found: {len(filtered)}")
+
+
+# # =================================================================================================
+# # MERGE VWAP WITH LATEST DATA -- Added CR on Rohit  Recommendation on new requirement -  28-MAY-26
+# # ==================================================================================================
 
 #===================================================================================================#
 #CODE ADDED FOR DAILY RSI AND WEEKLY RSI CALULATION CHANGE ON 09- JUNE -  2006
@@ -520,10 +522,7 @@ st.success(f"✅ Stocks Found: {len(filtered)}")
 # CALL ENGINE
 # =========================================================
 
-filtered = build_momentum_universe(
-    hist,
-    rolling_dates
-)
+filtered = build_momentum_universe(hist,rolling_dates)
 
 # =========================================================
 # DISPLAY
@@ -987,111 +986,111 @@ render_trading_dashboard(hist)
 #====================MACD-EMA=====08 JUNE- 2026============================
 
 
-# ============================================================
-# 📈 TRADER VIEW DASHBOARD – SYMBOL | PRICE | VOLUME | TIME
-# ============================================================
+# # ============================================================
+# # 📈 TRADER VIEW DASHBOARD – SYMBOL | PRICE | VOLUME | TIME
+# # ============================================================
 
-st.subheader("📊 Trader View – Price | Volume | Time")
+# st.subheader("📊 Trader View – Price | Volume | Time")
 
-# --- Stock selector ---
-trade_symbol = st.selectbox(
-    "Select Stock (Trader View)",
-    sorted(hist["SYMBOL"].unique())
-)
+# # --- Stock selector ---
+# trade_symbol = st.selectbox(
+#     "Select Stock (Trader View)",
+#     sorted(hist["SYMBOL"].unique())
+# )
 
-trade_df = hist[hist["SYMBOL"] == trade_symbol].sort_values("DATE1")
+# trade_df = hist[hist["SYMBOL"] == trade_symbol].sort_values("DATE1")
 
-# ================= VWAP CALCULATION (TRADER VIEW – SAFE) =================
+# # ================= VWAP CALCULATION (TRADER VIEW – SAFE) =================
 
-# Cumulative VWAP for selected stock
-trade_df["VWAP"] = (
-    (trade_df["CLOSE_PRICE"] * trade_df["DELIV_QTY"]).cumsum() /
-    trade_df["DELIV_QTY"].cumsum()
-)
+# # Cumulative VWAP for selected stock
+# trade_df["VWAP"] = (
+#     (trade_df["CLOSE_PRICE"] * trade_df["DELIV_QTY"]).cumsum() /
+#     trade_df["DELIV_QTY"].cumsum()
+# )
 
-# ================= PRICE VS TIME =================
-st.subheader("📈 Price vs Time")
+# # ================= PRICE VS TIME =================
+# st.subheader("📈 Price vs Time")
 
-st.plotly_chart(
-    px.line(
-        trade_df,
-        x="DATE1",
-        y="CLOSE_PRICE",
-        title=f"{trade_symbol} – Price Trend",
-        labels={"DATE1": "Time", "CLOSE_PRICE": "Price"},
-    ).add_scatter(
-        x=trade_df["DATE1"],
-        y=trade_df["VWAP"],
-        mode="lines",
-        name="VWAP",
-        line=dict(dash="dash")
-    ),
-    use_container_width=True
-)
+# st.plotly_chart(
+#     px.line(
+#         trade_df,
+#         x="DATE1",
+#         y="CLOSE_PRICE",
+#         title=f"{trade_symbol} – Price Trend",
+#         labels={"DATE1": "Time", "CLOSE_PRICE": "Price"},
+#     ).add_scatter(
+#         x=trade_df["DATE1"],
+#         y=trade_df["VWAP"],
+#         mode="lines",
+#         name="VWAP",
+#         line=dict(dash="dash")
+#     ),
+#     use_container_width=True
+# )
 
-# ================= VOLUME VS TIME =================
-st.subheader("📊 Volume vs Time")
+# # ================= VOLUME VS TIME =================
+# st.subheader("📊 Volume vs Time")
 
-vol_df = trade_df.rename(
-    columns={
-        "TTL_TRD_QNTY": "Total_Volume",
-        "DELIV_QTY": "Delivery_Volume"
-    }
-)
+# vol_df = trade_df.rename(
+#     columns={
+#         "TTL_TRD_QNTY": "Total_Volume",
+#         "DELIV_QTY": "Delivery_Volume"
+#     }
+# )
 
-st.plotly_chart(
-    px.bar(
-        vol_df,
-        x="DATE1",
-        y="Total_Volume",
-        title=f"{trade_symbol} – Total Volume",
-        labels={"DATE1": "Time", "Total_Volume": "Volume"},
-        opacity=0.7
-    ),
-    use_container_width=True
-)
+# st.plotly_chart(
+#     px.bar(
+#         vol_df,
+#         x="DATE1",
+#         y="Total_Volume",
+#         title=f"{trade_symbol} – Total Volume",
+#         labels={"DATE1": "Time", "Total_Volume": "Volume"},
+#         opacity=0.7
+#     ),
+#     use_container_width=True
+# )
 
-st.plotly_chart(
-    px.bar(
-        vol_df,
-        x="DATE1",
-        y="Delivery_Volume",
-        title=f"{trade_symbol} – Delivery Volume (Institutional)",
-        labels={"DATE1": "Time", "Delivery_Volume": "Delivery Volume"},
-        color="Delivery_Volume"
-    ),
-    use_container_width=True
-)
+# st.plotly_chart(
+#     px.bar(
+#         vol_df,
+#         x="DATE1",
+#         y="Delivery_Volume",
+#         title=f"{trade_symbol} – Delivery Volume (Institutional)",
+#         labels={"DATE1": "Time", "Delivery_Volume": "Delivery Volume"},
+#         color="Delivery_Volume"
+#     ),
+#     use_container_width=True
+# )
 
-# ================= TRADER SNAPSHOT TABLE =================
-st.subheader("📋 Trader Snapshot (Price | Volume | Time)")
-@st.cache_data(ttl=300)
-@st.fragment(run_every="5m")
-def trader_signal(row):
-    if row["CLOSE_PRICE"] > row["VWAP"] and row["DELIV_PER"] > 60:
-        return "🟢 Accumulation (Bullish)"
-    elif row["CLOSE_PRICE"] < row["VWAP"] and row["DELIV_PER"] < 30:
-        return "🔴 Distribution (Bearish)"
-    else:
-        return "🟡 Balance / Wait"
+# # ================= TRADER SNAPSHOT TABLE =================
+# st.subheader("📋 Trader Snapshot (Price | Volume | Time)")
+# @st.cache_data(ttl=300)
+# @st.fragment(run_every="5m")
+# def trader_signal(row):
+#     if row["CLOSE_PRICE"] > row["VWAP"] and row["DELIV_PER"] > 60:
+#         return "🟢 Accumulation (Bullish)"
+#     elif row["CLOSE_PRICE"] < row["VWAP"] and row["DELIV_PER"] < 30:
+#         return "🔴 Distribution (Bearish)"
+#     else:
+#         return "🟡 Balance / Wait"
 
-trade_df["Trader_View"] = trade_df.apply(trader_signal, axis=1)
+# trade_df["Trader_View"] = trade_df.apply(trader_signal, axis=1)
 
-st.dataframe(
-    trade_df[
-        [   
-            "SYMBOL",
-            "DATE1",
-            "CLOSE_PRICE",
-            "VWAP",
-            "TTL_TRD_QNTY",
-            "DELIV_QTY",
-            "DELIV_PER",
-            "Trader_View"
-        ]
-    ].sort_values("DATE1", ascending=False),
-    use_container_width=True
-)
+# st.dataframe(
+#     trade_df[
+#         [   
+#             "SYMBOL",
+#             "DATE1",
+#             "CLOSE_PRICE",
+#             "VWAP",
+#             "TTL_TRD_QNTY",
+#             "DELIV_QTY",
+#             "DELIV_PER",
+#             "Trader_View"
+#         ]
+#     ].sort_values("DATE1", ascending=False),
+#     use_container_width=True
+# )
 
 # ============================================================
 # 📊 TRADER MARKET SCANNER – TOP 50 STOCKS (LIQUIDITY VIEW)
