@@ -246,26 +246,29 @@ def build_momentum_universe(hist, rolling_dates):
     # SAFE FILL
     # =========================================================
 
-    rank_df["RSI_DAILY"] = (
-        rank_df.get("RSI_DAILY", 0)
-        .fillna(0)
-    )
+    # RSI_DAILY
+    if "RSI_DAILY" in rank_df.columns:
+        rank_df["RSI_DAILY"] = rank_df["RSI_DAILY"].fillna(0)
+    else:
+        rank_df["RSI_DAILY"] = 0
 
-    rank_df["RSI_WEEKLY"] = (
-        rank_df.get("RSI_WEEKLY", 0)
-        .fillna(0)
-    )
+    # RSI_WEEKLY
+    if "RSI_WEEKLY" in rank_df.columns:
+        rank_df["RSI_WEEKLY"] = rank_df["RSI_WEEKLY"].fillna(0)
+    else:
+        rank_df["RSI_WEEKLY"] = 0
 
-    rank_df["VALUE_TRADED"] = (
-        rank_df.get("VALUE_TRADED", 0)
-        .fillna(0)
-    )
+    # VALUE_TRADED
+    if "VALUE_TRADED" in rank_df.columns:
+        rank_df["VALUE_TRADED"] = rank_df["VALUE_TRADED"].fillna(0)
+    else:
+        rank_df["VALUE_TRADED"] = 0
 
-    rank_df["DAILY_VALUE_TRADED"] = (
-        rank_df.get("DAILY_VALUE_TRADED", 0)
-        .fillna(0)
-    )
-
+    # DAILY_VALUE_TRADED
+    if "DAILY_VALUE_TRADED" in rank_df.columns:
+        rank_df["DAILY_VALUE_TRADED"] = rank_df["DAILY_VALUE_TRADED"].fillna(0)
+    else:
+        rank_df["DAILY_VALUE_TRADED"] = 0
     # =========================================================
     # CPR
     # =========================================================
