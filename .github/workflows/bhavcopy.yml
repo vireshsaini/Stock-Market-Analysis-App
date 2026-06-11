@@ -2,8 +2,8 @@ name: NSE Daily Bhavcopy
 
 on:
   schedule:
-    # 17:45 IST = 12:15 UTC
-    - cron: "15 12 * * 1-5"
+  # 18:08 IST = 12:38 UTC
+  - cron: "38 12 * * 1-5" 
 
   workflow_dispatch:
 
