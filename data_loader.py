@@ -37,7 +37,7 @@ def calculate_rsi(series, period=14):
 # LOAD CURRENT YEAR DATA ONLY
 # ============================================================
 
-@st.cache_data(ttl=3600, show_spinner=True)
+@st.cache_data(ttl=2800, show_spinner=True)
 def load_dashboard_data(current_year=[2025,2026]):
 
     files = sorted(
