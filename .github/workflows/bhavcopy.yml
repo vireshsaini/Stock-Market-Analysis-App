@@ -2,8 +2,8 @@ name: NSE Daily Bhavcopy
 
 on:
   schedule:
-    # 17:45 IST = 12:15 UTC
-    - cron: "15 12 * * 1-5"
+  # 18:08 IST = 12:38 UTC
+  - cron: "38 12 * * 1-5" 
 
   workflow_dispatch:
 
@@ -23,6 +23,12 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
+      - name: Print Trigger Info
+        run: |
+          echo "Event: ${{ github.event_name }}"
+          echo "Current UTC Time:"
+          date -u
 
       - name: Setup Python
         uses: actions/setup-python@v5
