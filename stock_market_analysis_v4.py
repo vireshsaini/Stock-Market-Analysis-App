@@ -64,7 +64,7 @@ window_days = st.sidebar.selectbox(
 # LOAD DASHBOARD DATA
 # ============================================================
 
-hist = load_dashboard_data(current_year=2026)
+hist = load_dashboard_data(current_year=[2025,2026])
 
 if hist.empty:
     st.error("❌ No valid 2026 bhavcopy EQ data found")
