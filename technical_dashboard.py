@@ -55,15 +55,24 @@ def render_trading_dashboard(hist: pd.DataFrame):
         / trade_df["TTL_TRD_QNTY"].cumsum()
     )
 
-    trade_df["EMA20"] = trade_df["CLOSE_PRICE"].ewm(span=20).mean()
-    trade_df["EMA50"] = trade_df["CLOSE_PRICE"].ewm(span=50).mean()
-    trade_df["EMA200"] = trade_df["CLOSE_PRICE"].ewm(span=200).mean()
+    # trade_df["EMA20"] = trade_df["CLOSE_PRICE"].ewm(span=20).mean()
+    # trade_df["EMA50"] = trade_df["CLOSE_PRICE"].ewm(span=50).mean()
+    # trade_df["EMA200"] = trade_df["CLOSE_PRICE"].ewm(span=200).mean()
 
-    ema12 = trade_df["CLOSE_PRICE"].ewm(span=12).mean()
-    ema26 = trade_df["CLOSE_PRICE"].ewm(span=26).mean()
+    # ema12 = trade_df["CLOSE_PRICE"].ewm(span=12).mean()
+    # ema26 = trade_df["CLOSE_PRICE"].ewm(span=26).mean()
+
+    trade_df["EMA20"] = (trade_df.groupby("SYMBOL")["CLOSE_PRICE"].transform(lambda x: x.ewm(span=20, adjust=False).mean()))
+    trade_df["EMA50"] = (trade_df.groupby("SYMBOL")["CLOSE_PRICE"].transform(lambda x: x.ewm(span=50, adjust=False).mean()))
+    trade_df["EMA200"] = (trade_df.groupby("SYMBOL")["CLOSE_PRICE"].transform(lambda x: x.ewm(span=200, adjust=False).mean()))
+    
+    
+    ema12 = (trade_df.groupby("SYMBOL")["CLOSE_PRICE"].transform(lambda x: x.ewm(span=12, adjust=False).mean()))
+    ema26 = (trade_df.groupby("SYMBOL")["CLOSE_PRICE"].transform(lambda x: x.ewm(span=26, adjust=False).mean()))
 
     trade_df["MACD"] = ema12 - ema26
-    trade_df["Signal"] = trade_df["MACD"].ewm(span=9).mean()
+    #trade_df["Signal"] = trade_df["MACD"].ewm(span=9).mean()
+    trade_df["Signal"] = (trade_df.groupby("SYMBOL")["MACD"].transform(lambda x: x.ewm(span=9,adjust=False).mean()))
     trade_df["Histogram"] = trade_df["MACD"] - trade_df["Signal"]
 
     # Volume colors
