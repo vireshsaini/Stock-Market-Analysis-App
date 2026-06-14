@@ -9,7 +9,7 @@ from plotly.subplots import make_subplots
 # =====================================================
 # TRADING DASHBOARD (FINAL FIXED VERSION)
 # =====================================================
-
+@st.cache_data
 def render_trading_dashboard(hist: pd.DataFrame):
 
     st.subheader("📈 Professional Trading Dashboard " )
