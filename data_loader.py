@@ -17,29 +17,28 @@ BHAVCOPY_DIR = BASE_DIR / "Bhavcopy"
 # RSI FUNCTION
 # ============================================================
 
-def calculate_rsi_14(series, period=14):
+
+def calculate_rsi(series, period=14):
 
     delta = series.diff()
 
     gain = delta.clip(lower=0)
     loss = -delta.clip(upper=0)
 
-    avg_gain = gain.rolling(period).mean()
-    avg_loss = loss.rolling(period).mean()
+    avg_gain = gain.ewm(alpha=1/period, adjust=False).mean()
+    avg_loss = loss.ewm(alpha=1/period, adjust=False).mean()
 
-    rs = avg_gain / avg_loss.replace(0, pd.NA)
+    rs = avg_gain / avg_loss
 
     rsi = 100 - (100 / (1 + rs))
 
     return rsi
-
-
 # ============================================================
 # LOAD CURRENT YEAR DATA ONLY
 # ============================================================
 
-@st.cache_data(ttl=1800, show_spinner=True)
-def load_dashboard_data(current_year=2026):
+@st.cache_data(ttl=3600, show_spinner=True)
+def load_dashboard_data(current_year=[2025,2026]):
 
     files = sorted(
         BHAVCOPY_DIR.glob("sec_bhavdata_full_*.csv")
@@ -77,7 +76,7 @@ def load_dashboard_data(current_year=2026):
             # LOAD ONLY CURRENT YEAR
             # ====================================================
 
-            if trade_date.year != current_year:
+            if trade_date.year not in current_year:
                 continue
 
             # ====================================================
@@ -201,7 +200,7 @@ def load_dashboard_data(current_year=2026):
 
     hist["RSI"] = (
         hist.groupby("SYMBOL")["CLOSE_PRICE"]
-        .apply(calculate_rsi_14)
+        .apply(calculate_rsi)
         .reset_index(level=0, drop=True)
     )
 
