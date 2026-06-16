@@ -13,7 +13,7 @@ from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import inch
 from pathlib import Path
 from auth1 import login_screen
-from data_loader import (load_dashboard_data,get_latest_snapshot)
+from data_loader_pq import (load_dashboard_data,get_latest_snapshot)
 from technical_dashboard import render_trading_dashboard
 from momentum_engine import build_momentum_universe
     
