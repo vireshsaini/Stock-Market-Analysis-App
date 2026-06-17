@@ -37,7 +37,9 @@ def compute_weekly_rsi(hist_nd):
     df["DATE1"] = pd.to_datetime(df["DATE1"], errors="coerce")
     df["CLOSE_PRICE"] = pd.to_numeric(df["CLOSE_PRICE"], errors="coerce")
 
+    
     df = df.dropna(subset=["CLOSE_PRICE", "DATE1"])
+    df = df.sort_values(["SYMBOL", "DATE1"])
 
     weekly_data = (
         df.set_index("DATE1")
@@ -190,8 +192,8 @@ def build_momentum_universe(hist, rolling_dates):
         (rank_df["RSI_DAILY"] > 35) &
         (rank_df["RSI_DAILY"] < 50) &
         (rank_df["RSI_WEEKLY"] > 60) &
-        (rank_df["DAILY_VALUE_TRADED"] > 10000000) &    
-        (rank_df["VALUE_TRADED"] > 10000000)
+        (rank_df["DAILY_VALUE_TRADED"] > 10_000_000) &
+        (rank_df["VALUE_TRADED"] > 10_000_000)
     ].copy()
 
     # =========================================================
