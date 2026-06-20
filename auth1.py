@@ -12,7 +12,7 @@ from login_ui_style import set_bg
 # CONFIG
 # ============================================================
 
-IDLE_TIMEOUT = 300  # 5 minutes
+IDLE_TIMEOUT = 1200  # 5 minutes
 
 BASE_DIR = Path(__file__).resolve().parent
 USER_DIR = BASE_DIR / "User"
